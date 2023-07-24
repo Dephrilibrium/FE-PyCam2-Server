@@ -433,11 +433,14 @@ excptnCnt = 0
 while keepConnection:
     try:
         # Receive the data
+        waited4Msg = time()
         LogLineLeft("Receive data")
         rcvd = servConn.recv(1024)  # receive the data
         rcvd = rcvd.decode('utf-8')
         print("ok")
         LogLineLeftRight("Received: ", rcvd)
+
+        LogLineLeftRight("Waited for Receive:", f"{(time() - waited4Msg):.3f} s")
 
         # Split the data such that you separate the command
         # from the rest of the data
