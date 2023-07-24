@@ -335,13 +335,13 @@ def CaptureShutterspeedSequence(Prefix, StorePath, SS="1000:3150:10000:31500", n
 
 
         ### Do post-processing to the images ###
-        raws = np.array(raws) # List needs to be a Numpy -> Bitshifting not works correctly with uint8! (upper 4 bits clipped!)
         sPostProcessingAll = time()
         dPostProcessings = []
         for _iPic in range(nPics):
             sPostProcessing = time()
-            raw = raws[_iPic].astype(np.uint16)     # Target-Type needs to be uint16. uint8 can clip the 4 upper MSB when shifting up
-            raw = raw[cy1:cy2, cx1:cx2]             # Preclip bayer data to reduce the amount of data to handle
+            raw = raws[_iPic]               # Grab current image as numpy
+            raw = raw[cy1:cy2, cx1:cx2]     # Preclip bayer data to reduce the amount of data to handle
+            raw = raw.astype(np.uint16)     # Target-Type needs to be uint16. uint8 can clip the 4 upper MSB when shifting up
 
             if srvr_DemosaicClippedBayerImgs:                    # Debayer residual data
                 dMosaic = np.zeros((hWin, wWin), dtype=np.uint16)
