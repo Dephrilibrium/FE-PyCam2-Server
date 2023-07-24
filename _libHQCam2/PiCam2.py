@@ -67,18 +67,18 @@ class PiCam2:
 
         _fd = int(1e6 / fr)
         defaultCtrls ={
-                       "AwbEnable": 0,                                              # AWB off
-                       "ColourGains":(1.0,1.0),                                     # Additionally fix AWB-gains to 1 for (red, blue)
-                       "AeEnable": 0,                                               # Turn off AGC & AEC
-                       "AnalogueGain": 1.0,                                         # No Amplification
-                       "Brightness": 0.0,                                           # No relative brightness
-                       "Contrast": 1.0,                                             # "Normal" contrast
+                    #    "AwbEnable": 0,                                              # AWB off
+                    #    "ColourGains":(1.0,1.0),                                     # Additionally fix AWB-gains to 1 for (red, blue)
+                    #    "AeEnable": 0,                                               # Turn off AGC & AEC
+                    #    "AnalogueGain": 1.0,                                         # No Amplification
+                    #    "Brightness": 0.0,                                           # No relative brightness
+                    #    "Contrast": 1.0,                                             # "Normal" contrast
                        "ExposureTime": 1000,                                        # SS
-                       "Saturation": 0,                                             # Avoid extra saturation
-                       "NoiseReductionMode": 0,                                     # No noise-reduction algorithm
-                       "Sharpness": 0,                                              # Avoid sharpening
+                    #    "Saturation": 0,                                             # Avoid extra saturation
+                    #    "NoiseReductionMode": 0,                                     # No noise-reduction algorithm
+                    #    "Sharpness": 0,                                              # Avoid sharpening
                        "FrameDurationLimits": (_fd, _fd),                           # Predefine FrameDuration
-                       "ScalerCrop": [0,0] + [0,0] #list(self.__cam2__.sensor_resolution)  # No Preclip by GPU already
+                    #    "ScalerCrop": [0,0] + [0,0] #list(self.__cam2__.sensor_resolution)  # No Preclip by GPU already
                      }
         # self.__pconf2__ = self.__cam2__.create_preview_configuration(raw={"size": self.__cam2__.sensor_resolution}, main={"format": "BGR888", "size": (64,64)}, controls=defaultCtrls)
         self.__pconf2__ = self.__cam2__.create_preview_configuration(raw={"size": self.__cam2__.sensor_resolution}, controls=defaultCtrls)
@@ -86,7 +86,12 @@ class PiCam2:
         self.__ctrls__ = Controls(self.__cam2__)
         LogLineLeftRight("Setting up standard-controls:", "ok")
         print("Standard-controls are:")
-        print(defaultCtrls)
+        for _ctrlKey in defaultCtrls:
+            print(f" - {_ctrlKey}: {defaultCtrls[_ctrlKey]}")
+        print("picamera2-controls are:")
+        for _ctrlKey in self.__cam2__.camera_controls:
+            print(f" - {_ctrlKey}: {self.__cam2__.camera_controls[_ctrlKey]}")
+        
 
 
         self.__cam2__.start()
