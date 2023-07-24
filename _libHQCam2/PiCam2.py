@@ -57,6 +57,9 @@ class PiCam2:
         #                     61440, 61440,
         #                     65535, 65535,
         #                 ]
+        SSRange = Picamera2.find_tuning_algo(self.__tune2__, "rpi.agc")
+        SSRange["exposure_modes"]["normal"]["shutter"] = [100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000, 25000, 50000, 75000, 100000]
+        SSRange["exposure_modes"]["normal"]["gain"] = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 7.0, 8.0]
         print("ok")
 
         print("Initializing and starting picamera2...")
@@ -73,7 +76,7 @@ class PiCam2:
                     #    "AnalogueGain": 1.0,                                         # No Amplification
                     #    "Brightness": 0.0,                                           # No relative brightness
                     #    "Contrast": 1.0,                                             # "Normal" contrast
-                       "ExposureTime": 0,                                        # SS = Auto-SS by default
+                       "ExposureTime": 0,                            # SS = Auto-SS by default
                     #    "Saturation": 0,                                             # Avoid extra saturation
                     #    "NoiseReductionMode": 0,                                     # No noise-reduction algorithm
                     #    "Sharpness": 0,                                              # Avoid sharpening

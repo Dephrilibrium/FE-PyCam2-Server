@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Cmd is:
+# ./stdShot2 FNamePrefix SS_µs
+
+
 pid=$(pgrep -f rPiHQCamServer2.py)
 #echo "PID: $pid"
 if [[ -z "$pid" ]];

@@ -643,7 +643,7 @@ SetupCamera2(10.0)
 # CaptureShutterspeedSequence("test", imFolderPath, "1000:3150:10000:31500") # Testmethod
 
 
-### Test-Sequence Auto-Shutterspeed-Adjust
+# ### Test-Sequence Auto-Shutterspeed-Adjust
 # ConfShutterspeed(0)
 # CaptureShutterspeedSequence("TestAutoSS_#0000", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
 # CaptureShutterspeedSequence("TestAutoSS_#0001", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
