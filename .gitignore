@@ -1,0 +1,17 @@
+# Ignored folders
+__pycache__
+Downloads
+
+# Ignored files (wildcard)
+*.pkl
+*.raw
+*.yuv
+*.bgr
+*.jpg
+*.jpeg
+*.png
+.vscode/settings.json
+
+# Ignored files (specific)
+
+

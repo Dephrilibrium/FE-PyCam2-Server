@@ -1,0 +1,5 @@
+RaspberryPi/picamera2 git repository: https://github.com/raspberrypi/picamera2
+
+Already cloned repository in
+  /home/pi/Downloads/
+is excluded via .gitignore, so go there and clone by yourself if needed.
