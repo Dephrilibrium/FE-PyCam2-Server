@@ -73,7 +73,7 @@ class PiCam2:
                     #    "AnalogueGain": 1.0,                                         # No Amplification
                     #    "Brightness": 0.0,                                           # No relative brightness
                     #    "Contrast": 1.0,                                             # "Normal" contrast
-                       "ExposureTime": 1000,                                        # SS
+                       "ExposureTime": 0,                                        # SS = Auto-SS by default
                     #    "Saturation": 0,                                             # Avoid extra saturation
                     #    "NoiseReductionMode": 0,                                     # No noise-reduction algorithm
                     #    "Sharpness": 0,                                              # Avoid sharpening

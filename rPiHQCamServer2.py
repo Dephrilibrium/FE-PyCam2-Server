@@ -68,7 +68,7 @@ cam = None                                          # Object instance of PiCam2
 
 
 # Server settings
-srvr_ClipWinBayer = [1500,1500]                     # Default Clip-Window:
+srvr_ClipWinBayer = [4056,3040]                     # Default Clip-Window:
                                                     #  - [width, height]            : Imagewidth and -height around the center
                                                     #  - [X1, Y1, width, height]    : Imagewidth and -height starting on the left upper corner (X1, Y1)
 srvr_DemosaicClippedBayerImgs = False               # True: Server saves demosaicked images; False: Server saves RAW Bayer images
@@ -363,11 +363,16 @@ def ConfShutterspeed(tVal:int, LoBnd:float=0.95, HiBnd:float=1.05):
     ###     i = i + 1
     ### how_long(startCheck, "SS await")
     ### how_long(start, str.format("SS-Change S:{}, I:{} - Timeout:{}", tVal, cur_ss, False))
-
-    cVal, TO = ConfAwait(tVal, cam.SetSS, cam.GetSS, LoBnd=LoBnd, HiBnd=HiBnd, MaxTries=15)
+    
+    if tVal > 0:
+        cVal, TO = ConfAwait(tVal, cam.SetSS, cam.GetSS, LoBnd=LoBnd, HiBnd=HiBnd, MaxTries=15)
+    else:
+        cam.SetSS(tVal)
+        cVal = cam.GetSS()
+        TO = False
     ### how_long(startCheck, "SS await")
     how_long(start, str.format("SS-Change S:{}, I:{} - Timeout:{}", tVal, cVal, TO))
-    return ackStr
+    return ackStr, cVal, TO
 
 
 
@@ -522,7 +527,7 @@ def CaptureShutterspeedSequence(Prefix:str, StorePath:str, SS:str="1000:3150:100
         ### Build filenames ###
         fNames = []
         for _iPic in range(nPics): # Prepare filenames
-            fName = str.format("{}_ss={}_{}.{}", Prefix, _tSS, str(_iPic).zfill(4), "raw" )
+            fName = str.format("{}_ss={}_{}.{}", Prefix, "<SS>", str(_iPic).zfill(4), "raw" )
             fNames.append(join(StorePath, fName))
 
 
@@ -539,6 +544,10 @@ def CaptureShutterspeedSequence(Prefix:str, StorePath:str, SS:str="1000:3150:100
             if SaveSSLog:
                 rawMetas.append(meta)
             dCaps.append(duration(sCap))
+            if _tSS > 0:
+                fNames[_iPic] = fNames[_iPic].replace("<SS>", str(_tSS))
+            else:
+                fNames[_iPic] = fNames[_iPic].replace("<SS>", str(meta["ExposureTime"]))
             print(f"Capturing {fNames[_iPic]} took {dCaps[-1]:.3f}")
         dCapAll = duration(sCapAll)
         print(f"Raw Capturing of SS-Sequence took {dCapAll:.3f}")
@@ -633,6 +642,14 @@ if "mntPnt_RAMDisk" in locals() and mntPnt_RAMDisk != None:
 SetupCamera2(10.0)
 # CaptureShutterspeedSequence("test", imFolderPath, "1000:3150:10000:31500") # Testmethod
 
+
+### Test-Sequence Auto-Shutterspeed-Adjust
+# ConfShutterspeed(0)
+# CaptureShutterspeedSequence("TestAutoSS_#0000", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
+# CaptureShutterspeedSequence("TestAutoSS_#0001", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
+# CaptureShutterspeedSequence("TestAutoSS_#0002", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
+# CaptureShutterspeedSequence("TestAutoSS_#0003", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
+
 # (Re-)Create Server
 sServer = time()
 servSock = SetupServer()
@@ -673,7 +690,7 @@ while keepConnection:   # as long the connection is active, iterate infinite
 
         ####### Camera Conf #######
         elif cmd == "CAM:CONF:SS":                                          # ShutterSpeed (SS)
-            reply = ConfShutterspeed(payload[0])
+            reply = ConfShutterspeed(payload[0])[0] # Only get Ack-String (index: 0)
         elif cmd == "CAM:CONF:FR":                                          # FrameRate (FR)
             reply = ConfFramerate(payload[0])
         elif cmd == "CAM:CONF:AG":                                          # AnalogGain
