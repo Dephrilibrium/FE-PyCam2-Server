@@ -15,8 +15,11 @@ if [[ $# == 2 ]]; then
 	ss=$2
 fi
 
+dtStamp=$(date -d "today" +"%y%m%d_%H%M%S")
+#echo $dtStamp
+
 echo "Taking still-image with SS=$ss"
-libcamera-still -c libcamOptions.txt --shutter $ss -o $1_SS=$ss.png
+libcamera-still -c libcamOptions.txt --shutter $ss -o "$dtStamp $1_SS=$ss.png"
 echo "Command was: 'libcamera-still -c libcamOptions.txt --shutter $ss -o $1_SS=$ss.png'"
 echo "libcamOptions.txt contains:"
 cat libcamOptions.txt
