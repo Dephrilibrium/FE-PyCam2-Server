@@ -1,4 +1,27 @@
-# Global libs
+##################################################################################
+# PyCam2-Server for capturing images as RAW images.
+#                                                                                #
+# How to use (variable explanation):                                             #
+# xCmd:             Path to the 7-zip executable.                                #
+# parentDir:        Folder which is scanned recursevly for measurement-files.    #
+# picDir:           Foldername of the subdir where the images for the data-      #
+#                    extraction are stored (mean-images of                       #
+#                    _ConvertBayerToGrayScale.py)                                #
+# saveDir:          The second argument of the replace-function determines the   #
+#                    folder in which the extraction results are stored.          #
+#                    This can be used to separate source and destination folder. #
+# opt:              Is an instance of the PiMagePro options. This class has a    #
+#                    built in store-function to have the used extraction-option  #
+#                    as file on disk (see options below).                        #
+# LogFilePath:      If a filename is given, a logger-instance is created which   #
+#                    print the console messages to console as wall as to a file. #
+# LogLen:           Defines the length of a log-line (so that all logs have the  #
+#                    same length).                                               #
+#                                                                                #
+# 2023 © haum (OTH-Regensburg)                                                   #
+##################################################################################
+
+# Imports
 import os
 from os.path import join, basename, dirname, isdir, isfile
 from time import time, sleep
@@ -24,35 +47,37 @@ from _libHQCam2.PiCam2 import PiCam2
 
 ### Defaults
 # Paths
-ramdisk = None
-SDCardPath = r"/home/pi/Pictures/Captures"
-mntPnt_RAMDisk = r"/media/ramdisk"                # Mounting Point of ramdisk; Comment out to avoid a RAMDISK
+ramdisk        = None                               # Object instance for the used RAM-Disk
+mntPnt_RAMDisk = r"/media/ramdisk"                  # Mounting Point of the ramdisk; Comment out to avoid a RAMDISK
+SDCardPath     = r"/home/pi/Pictures/Captures"      # Path if no RAM-Disk is used
 
-imFolderPath = join(mntPnt_RAMDisk, "Captures")      # Is created within the capSeq_Path
+imFolderPath = join(mntPnt_RAMDisk, "Captures")     # Path to image folder
 
 # Static responses
-ackStr = "ack"
-nakStr = "nak"
+ackStr = "ack"                                      # Standard-Response on success
+nakStr = "nak"                                      # Standard-Response on failure
 
 # Server settings
-port = 5060
-servSock = None         # Obj-Variable for socket
-servConn = None         # Obj-Variable for client-connection
+port     = 5060                                     # Socket-Port
+servSock = None                                     # Object instance the socket
+servConn = None                                     # Object instance the client-connection
 
 # Camera settings
 # See also into SetupCamera2
-cam = None              # Obj-Variable for PiCam2
+cam = None                                          # Object instance of PiCam2
 
 
 # Server settings
-srvr_ClipWinBayer = [1500,1500]             # Can be [(offsetX, offsetY, )windowWidth, windowHeight] || Without optional offsets the clip is around the center
-srvr_DemosaicClippedBayerImgs = False
-srvr_ShrinkHalfDemosaicedIterations = 0
+srvr_ClipWinBayer = [1500,1500]                     # Default Clip-Window:
+                                                    #  - [width, height]            : Imagewidth and -height around the center
+                                                    #  - [X1, Y1, width, height]    : Imagewidth and -height starting on the left upper corner (X1, Y1)
+srvr_DemosaicClippedBayerImgs = False               # True: Server saves demosaicked images; False: Server saves RAW Bayer images
+srvr_ShrinkHalfDemosaicedIterations = 0             # 2^x pixels in X and Y are combined to one value (artificial pixel-binning)
 
 
 # Logger (can be used optional)
 # logFilePath = "/home/pi/RPiHQCam2.log"
-logger = None
+logger = None                                       # None = No log-file; Str-Path = Log-File is created
 
 
 
@@ -64,6 +89,11 @@ logger = None
 
 # Local Server-Functions
 def SetupServer():
+    """Sets up the server-socket and returns the instance.
+
+    Returns:
+        socket: Server-socket
+    """
     LogLineLeft("Creating socket")
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # SO_REUSEADDR=1: Allow reuse when socket-port already exists
@@ -78,7 +108,15 @@ def SetupServer():
 
 
 
-def AwaitIncomingConnection(socket):
+def AwaitIncomingConnection(socket:socket):
+    """Uses the given socket to check if there are incomming connections.
+
+    Args:
+        socket (socket): Server-socket which is checked for connection-requests.
+
+    Returns:
+        connection: Returns the accepted socket-connection.
+    """
     print("Awaiting connection request from client...")
     socket.listen(5)  # Allow up to 5 connections
     sConn, connIP = socket.accept()
@@ -87,7 +125,17 @@ def AwaitIncomingConnection(socket):
 
 
 
+
 def SetupCamera2(fr=10.0):
+    """Sets up the PiCam2 object instance.
+    !!! Note: It directly writes the instance to the global cam-variable !!!
+
+    Args:
+        fr (float, optional): FrameRate in Frames Per Second (FPS). Defaults to 10.0.
+
+    Returns:
+        PiCam2: Camera object instance.
+    """
     global cam
 
     # Init PiCam2
@@ -100,14 +148,43 @@ def SetupCamera2(fr=10.0):
 
 
 def IDN():
+    """Grabs the ID-String of the camera-object.
+
+    Returns:
+        str: IDN-String of the PiCam2 instance.
+    """
     return cam.IDN()
 
 
+
+
+
+
 def ECHO(payloadArr):
+    """Builds an space separated string from all arguments of the given iterable object.
+
+    Args:
+        payloadArr (iterable, str): Iterable object with strings to echo.
+
+    Returns:
+        str: Space separated string created from the iterable object elements.
+    """
     return " ".join(payloadArr)
 
 
+
+
+
+
 def Server_ClipWinBayerImage(ClipWinBayerByServer):
+    """Adjusts the clip-windows for pre-clipping.
+
+    Args:
+        ClipWinBayerByServer ([(x,y,)w,h]]): Imagewidth and -heigt (w,h) around the center or, if given, starting at (x,y) = left upper corner.
+
+    Returns:
+        str: Standard "ack" or "nak"
+    """
     global srvr_ClipWinBayer
 
     clpWin = [int(val) for val in ClipWinBayerByServer.split(":")]
@@ -118,18 +195,43 @@ def Server_ClipWinBayerImage(ClipWinBayerByServer):
 
     return nakStr
 
-def Server_DemosaicClippedBayerImgs(DebayerByServer):
+
+
+
+
+def Server_DemosaicClippedBayerImgs(DebayerByServer:bool):
+    """Adjusts the option if the PyCam2 Server should demosaick the images before save.
+
+    Args:
+        DebayerByServer (bool): Demosaick before save True or False
+
+    Returns:
+        str: Standard "ack" or "nak"
+    """
     global srvr_DemosaicClippedBayerImgs
 
     srvr_DemosaicClippedBayerImgs = DecodeBoolStr(DebayerByServer)
     if not srvr_DemosaicClippedBayerImgs:                # Shrinking needs debayered data
-        Server_ShrinkHalfDemosaicedIterations("0")
+        Server_SWPixelBinning("0")
     return ackStr
 
-def Server_ShrinkHalfDemosaicedIterations(ShrinkHalfIterations):
+
+
+
+
+
+def Server_SWPixelBinning(pxBinIters:int):
+    """Adjusts if the server should combine pixels in x and y direction by software (pixel-binning)
+
+    Args:
+        pxBinIters (int): 2^pxBinIters pixels are combined in x and y to one pixel.
+
+    Returns:
+        str: Standard "ack" or "nak"
+    """
     global srvr_ShrinkHalfDemosaicedIterations
 
-    srvr_ShrinkHalfDemosaicedIterations = int(ShrinkHalfIterations)
+    srvr_ShrinkHalfDemosaicedIterations = int(pxBinIters)
 
     if srvr_ShrinkHalfDemosaicedIterations < 0:
         srvr_ShrinkHalfDemosaicedIterations = 0
@@ -147,19 +249,48 @@ def Server_ShrinkHalfDemosaicedIterations(ShrinkHalfIterations):
 #     return ackStr if retVal == 0 else nakStr
 
 
-def Server_Archive(archiveFolderPath:str, archiveFName:str, compress=True, multicore=True, suppressParents=True):
+
+
+
+def Server_Archive(archiveFolderPath:str, archiveFName:str, compress:bool=True, multicore:bool=True, suppressParents:bool=True):
+    """Converts the given folder into archive. Optionally it can compress the archive and use multicore to speed up the compression.
+
+    Args:
+        archiveFolderPath (str): Folderpath which should be archived.
+        archiveFName (str): Target archive filename.
+        compress (bool, optional): Should the *.tar get compressed to *.tar.gz. Defaults to True.
+        multicore (bool, optional): Use multiple cores to compress. Defaults to True.
+        suppressParents (bool, optional): Only archive the foldercontents not including the parent folder (archiveFolderPath). Defaults to True.
+
+    Returns:
+        str: Standard "ack" or "nak"
+    """
     sCmprss = time()
     retVal = ArchiveFolder(archiveFolderPath, archiveFName, compress, multicore, suppressParents)
     how_long(sCmprss, "Archiving" + ("+Compression" if compress else ""))
     return ackStr if retVal == 0 else nakStr
 
 
-def ConfAwait(tVal, SetFunc, GetFunc, LoBnd=0.95, HiBnd=1.05, IterMax=10):
+def ConfAwait(tVal, SetFunc, GetFunc, LoBnd=0.95, HiBnd=1.05, MaxTries=10):
+    """Generic waiting function if a value which was configured to the camera is in the target tolerance.
+    For that it uses the given set and get functions including tolerance-values and a maximum try-counter.
+
+    Args:
+        tVal (_type_): Target value or iterable object with values which should be set.
+        SetFunc (_type_): Function to set the target value.
+        GetFunc (_type_): Function to read out the current value.
+        LoBnd (float, optional): Lower tolerance in %. Defaults to 0.95.
+        HiBnd (float, optional): Upper tolernace in %. Defaults to 1.05.
+        MaxTries (int, optional): Amount of tries before returning failure. Defaults to 10.
+
+    Returns:
+        _type_, bool: Returns the current value set and if a timeout-occured (more tries than MaxTries)
+    """
 
     SetFunc(tVal)
     try:
         valIsList = True
-        _ = (e for e in tVal)
+        _ = (e for e in tVal)  # Dummy if exception occures -> Then its not iterable
     except TypeError:
         valIsList = False
         tVal = [tVal]
@@ -168,7 +299,7 @@ def ConfAwait(tVal, SetFunc, GetFunc, LoBnd=0.95, HiBnd=1.05, IterMax=10):
     nVals = len(tVal)
     vInRange = [False] * nVals
     # start = time()
-    while IterMax > 0:
+    while MaxTries > 0:
         cVal = GetFunc()
         for _iVal in range(len(tVal)):
             _tVal = tVal[_iVal]
@@ -186,50 +317,91 @@ def ConfAwait(tVal, SetFunc, GetFunc, LoBnd=0.95, HiBnd=1.05, IterMax=10):
         
         if _iVal == (nVals-1) and all(vInRange):
             break
-        IterMax -= 1
+        MaxTries -= 1
     # how_long(start, "inner loop")
 
-    timedout = True if IterMax <= 0 else False
+    timedout = True if MaxTries <= 0 else False
 
     return cVal, timedout
 
-def ConfShutterspeed(tVal, LoBnd=0.95, HiBnd=1.05):
+
+
+
+
+
+def ConfShutterspeed(tVal:int, LoBnd:float=0.95, HiBnd:float=1.05):
+    """Adjusts the shutterspeed.
+
+    Args:
+        tVal (int): Shutterspeed value in µs
+        LoBnd (float, optional): Lower tolerance in %. Defaults to 0.95.
+        HiBnd (float, optional): Upper tolerance in %. Defaults to 1.05.
+
+    Returns:
+        str: Standard "ack" or "nak"
+    """
     start = time()
     tVal = int(tVal)
     
-    # startSet = time()
-    # cam.SetSS(tVal)
-    # cam.GetCamera().set_controls({"ExposureTime": tVal})
-    # how_long(startSet, "SetSS")
+    ###### Old testcode, as there was problems during the development -> Get removed in future.
+    ### startSet = time()
+    ### cam.SetSS(tVal)
+    ### cam.GetCamera().set_controls({"ExposureTime": tVal})
+    ### how_long(startSet, "SetSS")
+    ###
+    ### startCheck = time()
+    ### i = 0
+    ### metadata = cam.GetCamera().capture_metadata() # dauert immer einen frame -> 1/fps
+    ### cur_ss = metadata["ExposureTime"]
+    ### while tVal<(cur_ss*0.95) or tVal>(cur_ss*1.05):
+    ###     # time.sleep(0.02)
+    ###     #start_loop=time.time()
+    ###     metadata = cam.GetCamera().capture_metadata() # dauert immer einen frame -> 1/fps
+    ###     cur_ss = metadata["ExposureTime"]
+    ###     #start_loop=how_long(start_loop, 'Schleife')
+    ###     print('ist: '+str(cur_ss)+', It: '+str(i))
+    ###     i = i + 1
+    ### how_long(startCheck, "SS await")
+    ### how_long(start, str.format("SS-Change S:{}, I:{} - Timeout:{}", tVal, cur_ss, False))
 
-    # startCheck = time()
-    # i = 0
-    # metadata = cam.GetCamera().capture_metadata() # dauert immer einen frame -> 1/fps
-    # cur_ss = metadata["ExposureTime"]
-    # while tVal<(cur_ss*0.95) or tVal>(cur_ss*1.05):
-    #     # time.sleep(0.02)
-    #     #start_loop=time.time()
-    #     metadata = cam.GetCamera().capture_metadata() # dauert immer einen frame -> 1/fps
-    #     cur_ss = metadata["ExposureTime"]
-    #     #start_loop=how_long(start_loop, 'Schleife')
-    #     print('ist: '+str(cur_ss)+', It: '+str(i))
-    #     i = i + 1
-    # how_long(startCheck, "SS await")
-    # how_long(start, str.format("SS-Change S:{}, I:{} - Timeout:{}", tVal, cur_ss, False))
-
-    cVal, TO = ConfAwait(tVal, cam.SetSS, cam.GetSS, LoBnd=LoBnd, HiBnd=HiBnd, IterMax=15)
-    # how_long(startCheck, "SS await")
+    cVal, TO = ConfAwait(tVal, cam.SetSS, cam.GetSS, LoBnd=LoBnd, HiBnd=HiBnd, MaxTries=15)
+    ### how_long(startCheck, "SS await")
     how_long(start, str.format("SS-Change S:{}, I:{} - Timeout:{}", tVal, cVal, TO))
     return ackStr
 
-def ConfAnalogGain(tVal="1.0"):
+
+
+
+
+
+def ConfAnalogGain(tVal:str="1.0"):
+    """Adjusts the analog gain value.
+
+    Args:
+        tVal (str, optional): Analog gain. Defaults to "1.0".
+
+    Returns:
+        str: Standard "ack" or "nak"
+    """
     start = time()
     tVal = float(tVal)
     cVal, TO = ConfAwait(tVal, cam.SetAG, cam.GetAG)
     how_long(start, str.format("AG-Change S:{}, I:{} - Timeout:{}", tVal, cVal, TO))
     return ackStr
 
+
+
+
+
 def ConfWhiteBalance(tVal="1.0:1.0"):
+    """Configures auto-white-balance (AWB).
+
+    Args:
+        tVal (str, optional): (R:B) values for AWB. Defaults to "1.0:1.0".
+
+    Returns:
+        str: Standard "ack" or "nak"
+    """
     start = time()
     tVal = [float(v) for v in tVal.split(":")]
     cVal, TO = ConfAwait(tVal, cam.SetAWB, cam.GetAWB)
@@ -237,7 +409,20 @@ def ConfWhiteBalance(tVal="1.0:1.0"):
     return ackStr
 
 
+
+
+
 def ConfScalerCrop(offsetXY="0:0", sizeWH="4056:3040"):
+    """Should be a method to direct clip images from the sensor, but didn't worked correctly?
+    !!! Note: This method is implemented, but basically never used and therefore the full image resolution is always used !!!
+
+    Args:
+        offsetXY (str, optional): (R:B) values of the AWB for Red and Blue. Defaults to "0:0".
+        sizeWH (str, optional): Image width and height. Defaults to "4056:3040".
+
+    Returns:
+        str: Standard "ack" or "nak"
+    """
     start = time()
     offsetXY = list(offsetXY.split(":"))
     sizeWH = list(sizeWH.split(":"))
@@ -246,7 +431,20 @@ def ConfScalerCrop(offsetXY="0:0", sizeWH="4056:3040"):
     how_long(start, str.format("ScalerCrop-Change S:{}, I:{} - Timeout:{}", tVal, cVal, TO))
     return ackStr
 
+
+
+
+
+
 def ConfFramerate(FR="10.0"):
+    """Adjusts the framerate.
+
+    Args:
+        FR (str, optional): Framerate in Frames Per Second (FPS). Defaults to "10.0".
+
+    Returns:
+        str: Standard "ack" or "nak"
+    """
     start = time()
     tVal = float(FR)
     cVal, TO = ConfAwait(tVal, cam.SetFR, cam.GetFR)
@@ -256,7 +454,24 @@ def ConfFramerate(FR="10.0"):
 
 
 
-def CaptureShutterspeedSequence(Prefix, StorePath, SS="1000:3150:10000:31500", nPics=3, tMax=3.0, SaveSSLog=True):
+
+def CaptureShutterspeedSequence(Prefix:str, StorePath:str, SS:str="1000:3150:10000:31500", nPics:int=3, tMax:float=3.0, SaveSSLog:bool=True):
+    """Captures a sequence of raw images and stores them on (ram)disk.
+
+    Args:
+        Prefix (str): Image-prefix.
+        StorePath (_type_): Path where the images are stored.
+        SS (str, optional): A set of shutterspeeds separated by ":". Defaults to "1000:3150:10000:31500".
+        nPics (int, optional): Number of images per SS. Defaults to 3.
+        tMax (float, optional): Maximum time before a warning is generated (not implemented yet!). Defaults to 3.0.
+        SaveSSLog (bool, optional): Append a shutterspeed-log into the image folder. Defaults to True.
+
+    Raises:
+        Exception: When no store-path is given, an exception is thrown.
+
+    Returns:
+        str: Standard "ack" or "nak"
+    """
     global cam, srvr_ClipWinBayer # Used for presetting SS
 
     SS = [int(_ss) for _ss in SS.split(":")]    # ShutterSpeeds -> int
@@ -430,7 +645,7 @@ LogLineLeftRight("Starting main server-loop", "ok")
 keepConnection = True
 closeApp = False
 excptnCnt = 0
-while keepConnection:
+while keepConnection:   # as long the connection is active, iterate infinite
     try:
         # Receive the data
         waited4Msg = time()
@@ -442,12 +657,13 @@ while keepConnection:
 
         LogLineLeftRight("Waited for Receive:", f"{(time() - waited4Msg):.3f} s")
 
-        # Split the data such that you separate the command
-        # from the rest of the data
-        dataMessage = rcvd.split(' ')
-        cmd = dataMessage[0]
-        payload = dataMessage[1:]
 
+        dataMessage = rcvd.split(' ')   # Split the incomming message
+        cmd = dataMessage[0]            #  Get command and
+        payload = dataMessage[1:]       #  the arguments separately
+
+
+        ############## If-Elif-Else command structure ##############
         ####### Capture (most used) #######
         # print(cmd)
         if cmd == 'CAP:SEQFET':
@@ -473,7 +689,7 @@ while keepConnection:
         elif cmd == "SRV:IMG:DBAY":                                         # Do a debayer of the image
             reply = Server_DemosaicClippedBayerImgs(payload[0])
         elif cmd == "SRV:IMG:SRNK":                                         # Shrink size by half after debayer
-            reply = Server_ShrinkHalfDemosaicedIterations(payload[0])
+            reply = Server_SWPixelBinning(payload[0])
 
         ####### Server Common Commands #######
         elif cmd == "IDN?":

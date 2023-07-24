@@ -1,0 +1,14 @@
+verbose=1
+tuning-file=/usr/share/libcamera/ipa/raspberrypi/imx477_scientific.json
+rawfull=1
+awb=custom
+awbgains=1,1
+analoggain=1
+brightness=0
+contrast=1
+saturation=0
+sharpness=0
+framerate=10
+denoise=off
+
+codec=h264

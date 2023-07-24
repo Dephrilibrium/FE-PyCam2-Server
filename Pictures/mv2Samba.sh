@@ -11,4 +11,7 @@ sudo mv ./*.jpg /mnt/Samba/Hausladen/YawCam/
 echo Trying to move PNGs
 sudo mv ./*.png /mnt/Samba/Hausladen/YawCam/
 
+echo Trying to move h264
+sudo mv ./*.h264 /mnt/Samba/Hausladen/YawCam/
+
 

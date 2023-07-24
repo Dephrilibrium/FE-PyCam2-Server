@@ -10,6 +10,8 @@ Downloads
 *.jpg
 *.jpeg
 *.png
+*.h264
+*.code-workspace
 .vscode/settings.json
 
 # Ignored files (specific)
