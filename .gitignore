@@ -15,3 +15,23 @@ Downloads
 # Ignored files (specific)
 
 
+
+
+
+
+
+# Ignore Pis Home-content
+# Folders
+_Old PiCam1 Stuff
+.cache
+.config
+.dotnet
+.local
+.vscode-server
+
+# Files
+.bash_history
+.bash_logout
+.profile
+.wget-hsts
+rPiHQCamServer2.log
