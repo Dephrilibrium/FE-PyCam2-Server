@@ -58,9 +58,10 @@ class PiCam2:
         #                     65535, 65535,
         #                 ]
         SSRange = Picamera2.find_tuning_algo(self.__tune2__, "rpi.agc")
-        SSRange["exposure_modes"]["normal"]["shutter"] = [100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000, 25000, 50000, 75000, 100000]
-        SSRange["exposure_modes"]["normal"]["gain"] = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 7.0, 8.0]
+        SSRange["exposure_modes"]["normal"]["shutter"]  = [  100,   500,  1000,  5000, 10000, 33333, 66666, 100000]
+        SSRange["exposure_modes"]["normal"]["gain"]     = [1.000, 1.250, 1.400, 1.750, 2.000, 3.300, 5.250,  8.000]
         print("ok")
+
 
         print("Initializing and starting picamera2...")
         self.__cam2__ = Picamera2(tuning=self.__tune2__)
