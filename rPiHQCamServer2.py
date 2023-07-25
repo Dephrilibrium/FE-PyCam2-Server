@@ -71,6 +71,8 @@ cam = None                                          # Object instance of PiCam2
 srvr_ClipWinBayer = [4056,3040]                     # Default Clip-Window:
                                                     #  - [width, height]            : Imagewidth and -height around the center
                                                     #  - [X1, Y1, width, height]    : Imagewidth and -height starting on the left upper corner (X1, Y1)
+                                                    #  To avoid any problems, use only even numbers (0, 2, 4, ...).
+                                                    #  Odd numbers lead to half-indicies (*.5) which are not exist!
 srvr_DemosaicClippedBayerImgs = False               # True: Server saves demosaicked images; False: Server saves RAW Bayer images
 srvr_ShrinkHalfDemosaicedIterations = 0             # 2^x pixels in X and Y are combined to one value (artificial pixel-binning)
 
@@ -190,6 +192,8 @@ def Server_ClipWinBayerImage(ClipWinBayerByServer):
     clpWin = [int(val) for val in ClipWinBayerByServer.split(":")]
     nVals = len(clpWin)
     if nVals == 2 or nVals == 4:
+        for iVal in range(nVals):
+            clpWin[iVal] = clpWin[iVal] - (clpWin[iVal] % 2)
         srvr_ClipWinBayer = clpWin
         return ackStr
 
@@ -490,8 +494,8 @@ def CaptureShutterspeedSequence(Prefix:str, StorePath:str, SS:str="1000:3150:100
         ssLogStr = ""
 
     ####### Calculate crop-coordinates #######
-    w32 = 4064          # Captured array-Width   aligned to 32
-    h16 = 3040          # Captured array-Height  aigned to 16
+    # w32 = 4064          # Captured array-Width   aligned to 32
+    # h16 = 3040          # Captured array-Height  aigned to 16
     if len(srvr_ClipWinBayer) == 2: # Only Size is given!
         w4k = 4056          # Px-Width               of raw bayer-data
         h4k = 3040          # Px-Height              of raw bayer-data
@@ -643,12 +647,16 @@ SetupCamera2(10.0)
 # CaptureShutterspeedSequence("test", imFolderPath, "1000:3150:10000:31500") # Testmethod
 
 
-# ### Test-Sequence Auto-Shutterspeed-Adjust
-# ConfShutterspeed(0)
-# CaptureShutterspeedSequence("TestAutoSS_#0000", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
-# CaptureShutterspeedSequence("TestAutoSS_#0001", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
-# CaptureShutterspeedSequence("TestAutoSS_#0002", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
-# CaptureShutterspeedSequence("TestAutoSS_#0003", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
+### Test-Sequence Auto-Shutterspeed-Adjust
+ConfShutterspeed(0)
+Server_ClipWinBayerImage("680:240:2800:2800")
+CaptureShutterspeedSequence("TestAutoSS_#0000", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
+Server_ClipWinBayerImage("680:240:2801:2800")
+CaptureShutterspeedSequence("TestAutoSS_#0001", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
+Server_ClipWinBayerImage("680:240:2802:2800")
+CaptureShutterspeedSequence("TestAutoSS_#0002", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
+Server_ClipWinBayerImage("680:240:2803:2800")
+CaptureShutterspeedSequence("TestAutoSS_#0003", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
 
 # (Re-)Create Server
 sServer = time()
