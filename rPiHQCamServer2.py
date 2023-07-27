@@ -193,7 +193,9 @@ def Server_ClipWinBayerImage(ClipWinBayerByServer):
     nVals = len(clpWin)
     if nVals == 2 or nVals == 4:
         for iVal in range(nVals):
+            oldVal = clpWin[iVal]
             clpWin[iVal] = clpWin[iVal] - (clpWin[iVal] % 2)
+            print(f"Adjusted odd clipWin[{iVal}] value: {oldVal} -> {clpWin[iVal]}")
         srvr_ClipWinBayer = clpWin
         return ackStr
 
@@ -552,7 +554,7 @@ def CaptureShutterspeedSequence(Prefix:str, StorePath:str, SS:str="1000:3150:100
                 fNames[_iPic] = fNames[_iPic].replace("<SS>", str(_tSS))
             else:
                 fNames[_iPic] = fNames[_iPic].replace("<SS>", str(meta["ExposureTime"]))
-            print(f"Capturing {fNames[_iPic]} took {dCaps[-1]:.3f}")
+            print(f"Capturing {fNames[_iPic]} @Gain:{str(meta['AnalogueGain'])} took {dCaps[-1]:.3f}")
         dCapAll = duration(sCapAll)
         print(f"Raw Capturing of SS-Sequence took {dCapAll:.3f}")
 
@@ -644,19 +646,6 @@ if "mntPnt_RAMDisk" in locals() and mntPnt_RAMDisk != None:
 
 # Create Camera
 SetupCamera2(10.0)
-# CaptureShutterspeedSequence("test", imFolderPath, "1000:3150:10000:31500") # Testmethod
-
-
-### Test-Sequence Auto-Shutterspeed-Adjust
-ConfShutterspeed(0)
-Server_ClipWinBayerImage("680:240:2800:2800")
-CaptureShutterspeedSequence("TestAutoSS_#0000", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
-Server_ClipWinBayerImage("680:240:2801:2800")
-CaptureShutterspeedSequence("TestAutoSS_#0001", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
-Server_ClipWinBayerImage("680:240:2802:2800")
-CaptureShutterspeedSequence("TestAutoSS_#0002", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
-Server_ClipWinBayerImage("680:240:2803:2800")
-CaptureShutterspeedSequence("TestAutoSS_#0003", imFolderPath, SS="0", nPics="3", tMax="0", SaveSSLog="True")
 
 # (Re-)Create Server
 sServer = time()
