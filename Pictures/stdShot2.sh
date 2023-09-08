@@ -14,7 +14,7 @@ else
 	kill -15 $pid
 fi
 
-ss=10000
+ss=100000
 if [[ $# == 2 ]]; then
 	ss=$2
 fi
