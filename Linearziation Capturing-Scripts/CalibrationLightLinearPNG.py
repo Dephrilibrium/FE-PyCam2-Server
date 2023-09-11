@@ -15,6 +15,8 @@ SSs = np.hstack((SSs, np.linspace(start=2000, stop=10000, num=9, endpoint=True).
 SSs = np.hstack((SSs, np.linspace(start=12500, stop=100000, num=40-4, endpoint=True).astype(np.int32)))
 # SSs[0] = 114
 
+# SSs = np.linspace(start=4000, stop=80000, num=6, endpoint=True).astype(np.int32)  # Test SSs (checking AG, DG behaviour)
+
 nMean = 3
 
 # Init
@@ -31,7 +33,7 @@ sleep(2)
 
 realSSImgsWereTaken = []
 stream="raw"
-folder = "/home/pi/Linearziation Capturing-Scripts/Calibration Light 2W0 Noir PNGs"
+folder = "/home/pi/Linearziation Capturing-Scripts/Calibration Light 1W1 Noir PNGs"
 
 if not isdir(folder):
     mkdir(folder)
@@ -43,7 +45,7 @@ bayW = int(imW * 1.5)
 
 t0 = time()
 tLast = t0
-ssOutput = "time since start; time of iteration; Target Set-SS; Read Meta-SS, Images MeanBrightness\n"
+ssOutput = "time since start; time of iteration; Target Set-SS; Read Meta-SS; Analogue Gain; Digital Gain; Mean(Brightness/Gains)\n"
 for _ss in SSs:
 
     cam2.set_controls({"ExposureTime": _ss})
@@ -59,25 +61,27 @@ for _ss in SSs:
     #     print(f"Current SS: {currSS}".ljust(50), end="\r")
     #     sleep(0.1)
 
-    sleep(2.5)
+    sleep(1.1) # Takes 0.9s @ 10FPS
     for _iImg in range(nMean):
         raw, meta = cam2.capture_arrays(["raw"])
         raw = raw[0].astype(np.uint16)
         currSS = meta["ExposureTime"]
+        ag = meta["AnalogueGain"]
+        dg = meta["DigitalGain"]
 
-        # raw = cam2.capture_array(name="raw")
         raw = raw[:, :bayW].astype(np.uint16)
         dMosaic = np.zeros((imH, imW), dtype=np.uint16)
         for byte in range(2):
             dMosaic[:, byte::2] = ( (raw[:, byte::3] << 4) | ((raw[:, 2::3] >> (byte * 4)) & 0b1111) )
         # raw = dMosaic
 
-        dMosaic = np.right_shift(dMosaic, 4)
+        # dMosaic = np.divide(dMosaic, np.multiply(ag, dg)) # AG=DG=1.0!
+        dMosaic = np.right_shift(dMosaic, 4) # Make 8-Bit image for comparison
 
         meanBright =  np.mean(dMosaic)
         tNow = time()
-        tPrintLine = f"t={tNow-t0:10.3f}; tDelta={tNow-tLast:10.3f}; TargetSS={_ss:6d}; MetaSS={currSS:6d}; MeanBright={meanBright:7.3f}"
-        ssOutput += f"{tNow-t0:10.3f};{tNow-tLast:10.3f};{_ss:6d};{currSS:6d};{meanBright:10.3f}\n"
+        tPrintLine = f"t={tNow-t0:10.3f}; tDelta={tNow-tLast:10.3f}; TargetSS={_ss:6d}; MetaSS={currSS:6d}; AG={ag:10.3f}; DG={dg:10.3f}; MeanBright={meanBright:7.3f}"
+        ssOutput += f"{tNow-t0:10.3f};{tNow-tLast:10.3f};{_ss:6d};{currSS:6d};{ag:10.3f};{dg:10.3f};{meanBright:10.3f}\n"
         print(tPrintLine)
 
         tLast = tNow
@@ -93,10 +97,6 @@ for _ss in SSs:
 
 
 cam2.close()
-# for _iSS in range(len(realSSImgsWereTaken)):
-#     _ss = SSs[_iSS // nMean]
-#     _actual = realSSImgsWereTaken[_iSS]
-#     ssOutput += f"{_ss}, {_actual}\n"
 
 f = open(join(folder, "SS.log"), "w")
 f.write(ssOutput)
