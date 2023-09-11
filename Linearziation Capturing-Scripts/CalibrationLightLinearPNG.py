@@ -11,8 +11,8 @@ from time import time
 
 # List of shutters
 SSs = np.linspace(start=100, stop=1000, num=10, endpoint=True).astype(np.int32)
-SSs = np.hstack((SSs, np.linspace(start=1000, stop=10000, num=10, endpoint=True).astype(np.int32)))
-SSs = np.hstack((SSs, np.linspace(start=10000, stop=100000, num=41-4, endpoint=True).astype(np.int32)))
+SSs = np.hstack((SSs, np.linspace(start=2000, stop=10000, num=9, endpoint=True).astype(np.int32)))
+SSs = np.hstack((SSs, np.linspace(start=12500, stop=100000, num=40-4, endpoint=True).astype(np.int32)))
 # SSs[0] = 114
 
 nMean = 3
@@ -31,7 +31,7 @@ sleep(2)
 
 realSSImgsWereTaken = []
 stream="raw"
-folder = "/home/pi/Pictures/Calibration Light 2W0 Noir PNGs"
+folder = "/home/pi/Linearziation Capturing-Scripts/Calibration Light 2W0 Noir PNGs"
 
 if not isdir(folder):
     mkdir(folder)
@@ -59,7 +59,7 @@ for _ss in SSs:
     #     print(f"Current SS: {currSS}".ljust(50), end="\r")
     #     sleep(0.1)
 
-    sleep(1.5)
+    sleep(2.5)
     for _iImg in range(nMean):
         raw, meta = cam2.capture_arrays(["raw"])
         raw = raw[0].astype(np.uint16)
@@ -92,7 +92,7 @@ for _ss in SSs:
         # sleep(0.15)
 
 
-
+cam2.close()
 # for _iSS in range(len(realSSImgsWereTaken)):
 #     _ss = SSs[_iSS // nMean]
 #     _actual = realSSImgsWereTaken[_iSS]

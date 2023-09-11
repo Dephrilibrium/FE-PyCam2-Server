@@ -11,16 +11,19 @@ from time import time
 
 # List of shutters
 SSs = np.linspace(start=100, stop=1000, num=10, endpoint=True).astype(np.int32)
-SSs = np.hstack((SSs, np.linspace(start=1000, stop=10000, num=10, endpoint=True).astype(np.int32)))
-SSs = np.hstack((SSs, np.linspace(start=10000, stop=100000, num=41-4, endpoint=True).astype(np.int32)))
+SSs = np.hstack((SSs, np.linspace(start=2000, stop=10000, num=9, endpoint=True).astype(np.int32)))
+SSs = np.hstack((SSs, np.linspace(start=12500, stop=100000, num=40-4, endpoint=True).astype(np.int32)))
+
+# SSs = np.linspace(start=92000, stop=100000, num=9, endpoint=True).astype(np.int32)
 # SSs[0] = 114
 
 nMean = 3
 
 # Init
-tuningNoir = Picamera2.load_tuning_file("imx477_noir.json")
-cam2 = Picamera2(tuning=tuningNoir)
-pConf2 = cam2.create_preview_configuration(raw={"size": cam2.sensor_resolution},
+# tuningNoir = Picamera2.load_tuning_file("imx477_noir.json")
+# cam2 = Picamera2(tuning=tuningNoir)
+cam2 = Picamera2() # Init with all default!
+pConf2 = cam2.create_preview_configuration(#raw={"size": cam2.sensor_resolution},
                                         controls={"FrameDurationLimits": (100000, 100000)}
 )
 cam2.configure(pConf2)
@@ -29,7 +32,7 @@ sleep(2)
 
 realSSImgsWereTaken = []
 stream="raw"
-folder = "/home/pi/Pictures/Calibration Light 2W0 Noir JPGs"
+folder = "/home/pi/Linearziation Capturing-Scripts/Calibration Light 2W0 Std JPGs"
 
 if not isdir(folder):
     mkdir(folder)
@@ -57,20 +60,23 @@ for _ss in SSs:
     #     print(f"Current SS: {currSS}".ljust(50), end="\r")
     #     sleep(0.1)
 
-    sleep(1.5)
+    sleep(2)
     for _iImg in range(nMean):
-        raw, meta = cam2.capture_arrays(["raw"])
-        raw = raw[0].astype(np.uint16)
+        # raw, meta = cam2.capture_arrays(["raw"])
+        main, meta = cam2.capture_arrays(["main"])
+        main = main[0]#.astype(np.uint16)
         currSS = meta["ExposureTime"]
 
         # raw = cam2.capture_array(name="raw")
-        raw = raw[:, :bayW].astype(np.uint16)
-        dMosaic = np.zeros((imH, imW), dtype=np.uint16)
-        for byte in range(2):
-            dMosaic[:, byte::2] = ( (raw[:, byte::3] << 4) | ((raw[:, 2::3] >> (byte * 4)) & 0b1111) )
+        # raw = raw[:, :bayW].astype(np.uint16)
+        # dMosaic = np.zeros((imH, imW), dtype=np.uint16)
+        # for byte in range(2):
+        #     dMosaic[:, byte::2] = ( (raw[:, byte::3] << 4) | ((raw[:, 2::3] >> (byte * 4)) & 0b1111) )
         # raw = dMosaic
 
-        dMosaic = np.right_shift(dMosaic, 4)
+        # dMosaic = np.right_shift(dMosaic, 4)
+        # dMosaic = main # Remap for following code!
+        dMosaic = cv.cvtColor(main, cv.COLOR_BGR2GRAY) # Make standard gamma to grayscale
 
         meanBright =  np.mean(dMosaic)
         tNow = time()
@@ -85,11 +91,12 @@ for _ss in SSs:
         # Saving
         fName = f"CalLight Gamma SS={_ss:06d}_{_iImg:04d}.jpg"
         fPath = join(folder, fName)
-        dSave = dMosaic.astype(np.uint8)
+        dSave = dMosaic#.astype(np.uint8)
         cv.imwrite(fPath, dSave)
-        # sleep(0.15)
+        sleep(0.15) # Be sure, that a least one frame has passed before capturing the next one!
 
 
+cam2.close()
 
 # for _iSS in range(len(realSSImgsWereTaken)):
 #     _ss = SSs[_iSS // nMean]
