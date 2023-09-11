@@ -15,6 +15,7 @@ SSs = np.hstack((SSs, np.linspace(start=2000, stop=10000, num=9, endpoint=True).
 SSs = np.hstack((SSs, np.linspace(start=12500, stop=100000, num=40-4, endpoint=True).astype(np.int32)))
 
 # SSs = np.linspace(start=92000, stop=100000, num=9, endpoint=True).astype(np.int32)
+# SSs = np.linspace(start=4000, stop=20000, num=17, endpoint=True).astype(np.int32)
 # SSs[0] = 114
 
 nMean = 3
@@ -32,7 +33,7 @@ sleep(2)
 
 realSSImgsWereTaken = []
 stream="raw"
-folder = "/home/pi/Linearziation Capturing-Scripts/Calibration Light 2W0 Std JPGs"
+folder = "/home/pi/Linearziation Capturing-Scripts/Calibration Light 0W6 Std JPGs"
 
 if not isdir(folder):
     mkdir(folder)
@@ -44,7 +45,7 @@ bayW = int(imW * 1.5)
 
 t0 = time()
 tLast = t0
-ssOutput = "time since start; time of iteration; Target Set-SS; Read Meta-SS, Images MeanBrightness\n"
+ssOutput = "time since start; time of iteration; Target Set-SS; Read Meta-SS; Analog Gain; Digital Gain; Images MeanBrightness\n"
 for _ss in SSs:
 
     cam2.set_controls({"ExposureTime": _ss})
@@ -63,9 +64,17 @@ for _ss in SSs:
     sleep(2)
     for _iImg in range(nMean):
         # raw, meta = cam2.capture_arrays(["raw"])
-        main, meta = cam2.capture_arrays(["main"])
-        main = main[0]#.astype(np.uint16)
+        # main, meta = cam2.capture_arrays(["main"])
+        fName = f"CalLight Gamma SS={_ss:06d}_{_iImg:04d}.jpg"
+        fPath = join(folder, fName)
+
+        meta = cam2.capture_file(fPath)
+        main = cv.imread(fPath)
+        
+        # main = main[0]#.astype(np.uint16)
         currSS = meta["ExposureTime"]
+        ag = meta["AnalogueGain"]
+        dg = meta["DigitalGain"]
 
         # raw = cam2.capture_array(name="raw")
         # raw = raw[:, :bayW].astype(np.uint16)
@@ -80,7 +89,7 @@ for _ss in SSs:
 
         meanBright =  np.mean(dMosaic)
         tNow = time()
-        tPrintLine = f"t={tNow-t0:10.3f}; tDelta={tNow-tLast:10.3f}; TargetSS={_ss:6d}; MetaSS={currSS:6d}; MeanBright={meanBright:7.3f}"
+        tPrintLine = f"t={tNow-t0:10.3f}; tDelta={tNow-tLast:10.3f}; TargetSS={_ss:6d}; MetaSS={currSS:6d}; AG={ag:10.3f}; DG={dg:10.3f}; MeanBright={meanBright:7.3f}"
         ssOutput += f"{tNow-t0:10.3f};{tNow-tLast:10.3f};{_ss:6d};{currSS:6d};{meanBright:10.3f}\n"
         print(tPrintLine)
 
@@ -89,8 +98,8 @@ for _ss in SSs:
         realSSImgsWereTaken.append(currSS)
 
         # Saving
-        fName = f"CalLight Gamma SS={_ss:06d}_{_iImg:04d}.jpg"
-        fPath = join(folder, fName)
+        # fName = f"CalLight Gamma SS={_ss:06d}_{_iImg:04d}.jpg"
+        # fPath = join(folder, fName)
         dSave = dMosaic#.astype(np.uint8)
         cv.imwrite(fPath, dSave)
         sleep(0.15) # Be sure, that a least one frame has passed before capturing the next one!
