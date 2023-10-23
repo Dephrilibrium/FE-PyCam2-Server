@@ -14,7 +14,7 @@ class PiCam2:
         # Controls can be changed during runtime!
         # -> Some controls will not be changed, and therefore set up with the configuration, so that they are "static"!
 
-        # Cam-Tuning files can be found under /usr/share/libcamera/ipa/raspberrypi/
+        # Cam-Tuning files can be found under /usr/share/libcamera/ipa/rpi/vc4/
         LogLineLeft("Grabbing tune-file")
         _tune2 = Picamera2.load_tuning_file("imx477_scientific.json")
 
@@ -23,6 +23,9 @@ class PiCam2:
 
         # Adjusting ExposureMode "normal" in tuning-contents (set up finer SS-list and all gains = 1 to represent a const)
         _tune2 = self.__AdjustExposureModeNormal__(tune=_tune2)
+
+        # Adjusting MeteringMode for AGC
+        _tune2 = self.__AdjustMeteringMode__(tune=_tune2)
         print("ok")
 
 
@@ -34,8 +37,8 @@ class PiCam2:
         LogLineLeftRight("Instanciating picamera2-object:", "ok")
 
         # Start internal camera-capture stream (no screen-output) -> Noted, this is not necessary!
-        self.__cam2__.start_preview(Preview.NULL)
-        LogLineLeftRight("Setting up NULL-preview:", "ok")
+        # self.__cam2__.start_preview(Preview.NULL)
+        # LogLineLeftRight("Setting up NULL-preview:", "ok")
 
         # Create static camera-configuration with fix configs and controls! -> See description below def __init__
         _pConf2 = self.__cam2__.create_preview_configuration(raw={"size": self.__cam2__.sensor_resolution,
@@ -125,8 +128,37 @@ class PiCam2:
         _agc = Picamera2.find_tuning_algo(tune, "rpi.agc")
         _agc["exposure_modes"]["normal"]["shutter"]  = [  100,   333,   666,  1000,  3333,  6666, 10000, 33333, 66666, 100000]
         _agc["exposure_modes"]["normal"]["gain"]     = [1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,  1.000]
+
+        tune = self.__AdjustMeteringMode__(tune=tune)
+        tune = self.__AdjustContraintMode__(tune=tune)
         return tune
 
+
+    def __AdjustMeteringMode__(self, tune):
+        _agc = Picamera2.find_tuning_algo(tune, "rpi.agc")
+        _agc["metering_modes"]["centre-weighted"]["weights"] = [1.0] * 15
+        _agc["metering_modes"]["spot"]           ["weights"] = [1.0] * 15
+        _agc["metering_modes"]["matrix"]         ["weights"] = [1.0] * 15
+        return tune
+
+    def __AdjustContraintMode__(self, tune):
+        _agc = Picamera2.find_tuning_algo(tune, "rpi.agc")
+        _constraints = [
+            {   "bound": "LOWER",
+                "q_lo": 0.98,
+                "q_hi": 1.00,
+                "y_target": [0, 0.2, 1000, 0.2]
+            },
+            {   "bound": "UPPER",
+                "q_lo": 0.98,
+                "q_hi": 1.00,
+                "y_target": [0, 0.8, 1000, 0.8]
+            },
+        ]
+        _agc["constraint_modes"]["normal"]    = _constraints.copy()
+        _agc["constraint_modes"]["highlight"] = _constraints.copy()
+        _agc["constraint_modes"]["shadows"]   = _constraints.copy()
+        return tune
 
 
     def IDN(self):
@@ -138,7 +170,7 @@ class PiCam2:
 
 
     def CaptureFromStream(self, stream="raw"):
-        return self.__cam2__.capture_array("raw")
+        return self.__cam2__.capture_array(stream)
 
 
     def CaptureMetaAndImgFromStream(self, stream="raw"):

@@ -62,7 +62,7 @@ if(not os.path.isdir(ramdiskPath)):
     os.system(f"sudo chown pi:pi {ramdiskPath}")
 
 
-# Cam-Tuning can be found under /usr/share/libcamera/ipa/raspberrypi/
+# Cam-Tuning can be found under /usr/share/libcamera/ipa/rpi/vc4/
 camTune = Picamera2.load_tuning_file("imx477_scientific.json")
 
 # Optional settings!

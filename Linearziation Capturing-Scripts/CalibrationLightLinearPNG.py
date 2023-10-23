@@ -33,7 +33,7 @@ sleep(2)
 
 realSSImgsWereTaken = []
 stream="raw"
-folder = "/home/pi/Linearziation Capturing-Scripts/Calibration Light 1W1 Noir PNGs"
+folder = "/home/pi/Linearziation Capturing-Scripts/Calibration Light 2W0 Noir PNGs"
 
 if not isdir(folder):
     mkdir(folder)

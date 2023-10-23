@@ -195,7 +195,8 @@ def Server_ClipWinBayerImage(ClipWinBayerByServer):
         for iVal in range(nVals):
             oldVal = clpWin[iVal]
             clpWin[iVal] = clpWin[iVal] - (clpWin[iVal] % 2)
-            print(f"Adjusted odd clipWin[{iVal}] value: {oldVal} -> {clpWin[iVal]}")
+            if oldVal != clpWin[iVal]: # Value was corrected
+                print(f"Adjusted (odd) clipWin[{iVal}] value: {oldVal} -> {clpWin[iVal]}")
         srvr_ClipWinBayer = clpWin
         return ackStr
 
@@ -466,7 +467,7 @@ def ConfFramerate(FR="10.0"):
 
 
 
-def CaptureShutterspeedSequence(Prefix:str, StorePath:str, SS:str="1000:3150:10000:31500", nPics:int=3, tMax:float=3.0, SaveSSLog:bool=True):
+def CaptureShutterspeedSequence(Prefix:str, StorePath:str, SS:str="1000:3150:10000:31500", nPics:str="3", tMax:str="3.0", SaveSSLog:str="True"):
     """Captures a sequence of raw images and stores them on (ram)disk.
 
     Args:
@@ -643,9 +644,13 @@ if "mntPnt_RAMDisk" in locals() and mntPnt_RAMDisk != None:
 
 
 
-
 # Create Camera
 SetupCamera2(10.0)
+
+# ConfShutterspeed(0)
+# for _i in range(100):
+#     CaptureShutterspeedSequence(Prefix=f"TestImg_#{_i:04d}", StorePath=imFolderPath, SS="0", nPics="3")
+
 
 # (Re-)Create Server
 sServer = time()

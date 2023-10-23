@@ -11,21 +11,27 @@ else
 	kill -15 $pid
 fi
 
+
+ag=8.0
+if [[ $# -ge 2 ]]; then
+	ag=$2
+fi
+
 ss=10000
-if [[ $# > 1 ]]; then
-	ss=$2
+if [[ $# -ge 3 ]]; then
+	ss=$3
 fi
 
 to=5000
-if [[ $# > 2 ]]; then
-	to=$3
+if [[ $# > 4 ]]; then
+	to=$4
 fi
 
 dtStamp=$(date -d "today" +"%y%m%d_%H%M%S")
 #echo $dtStamp
 
 echo "Taking video with SS=$ss"
-libcamera-vid -c libcamVidOptions.txt --shutter=$ss --timeout=$to -o "$dtStamp $1_SS=10000.h264"
-echo "Command was: 'libcamera-vid -c libcamVidOptions.txt --shutter=$ss --timeout=$to -o $1_SS=$ss.h264'"
+libcamera-vid -c libcamVidOptions.txt --gain=$ag --shutter=$ss --timeout=$to -o "$dtStamp $1_SS=10000.h264"
+echo libcamera-vid -c libcamVidOptions.txt --gain=$ag --shutter=$ss --timeout=$to -o \"$dtStamp $1_SS=10000.h264\"'"
 echo "libcamOptions.txt contains:"
 cat libcamVidOptions.txt

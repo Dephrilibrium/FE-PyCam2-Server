@@ -1,5 +1,5 @@
 verbose=1
-tuning-file=/usr/share/libcamera/ipa/raspberrypi/imx477_scientific.json
+tuning-file=/usr/share/libcamera/ipa/rpi/vc4/imx477_scientific.json
 rawfull=1
 awb=custom
 awbgains=1,1
