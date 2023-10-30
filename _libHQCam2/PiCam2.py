@@ -41,14 +41,14 @@ class PiCam2:
         # LogLineLeftRight("Setting up NULL-preview:", "ok")
 
         # Create static camera-configuration with fix configs and controls! -> See description below def __init__
-        _pConf2 = self.__cam2__.create_preview_configuration(raw={"size": self.__cam2__.sensor_resolution,
+        self._pConf2 = self.__cam2__.create_preview_configuration(raw={"size": self.__cam2__.sensor_resolution,
                                                                          },
                                                              controls={"AnalogueGain":      1.0,
                                                                      "FrameDurationLimits": (_fd, _fd),
                                                                      }
                                                             ) 
         LogLineLeftRight("Created preview-configuration:", "ok")
-        self.__cam2__.configure(_pConf2)
+        self.__cam2__.configure(self._pConf2)
         LogLineLeftRight("Preview-configuration:", "ok")
 
         # Start the stream
