@@ -1,6 +1,7 @@
 # Ignored folders
 __pycache__
 Downloads
+Speedmeasure
 
 # Ignored files (wildcard)
 *.pkl
