@@ -21,7 +21,7 @@ You can install it directly via apt or also pip. When using pip, some dependenci
 ```
 sudo apt install -y python3-libcamera python3-kms++
 sudo apt install -y python3-prctl libatlas-base-dev ffmpeg python3-pip
-pip3 install numpy --upgrade
+pip3 install numpy --upgrade (on Pi5 try ``sudo apt install python3-numpy``)
 ```
 Afterwards you can run
 ```sudo apt install -y python3-picamera2``` (apt-install)
@@ -36,7 +36,7 @@ Some features of picamera2 can use parts of the following packages:
 ```
 sudo apt install -y python3-opencv
 sudo apt install -y opencv-data
-pip3 install tflite-runtime
+pip3 install tflite-runtime (if faced problems, please visit https://stackoverflow.com/questions/74968761/pip3-cant-download-the-latest-tflite-runtime)
 sudo apt install -y ffmpeg
 ```
 
