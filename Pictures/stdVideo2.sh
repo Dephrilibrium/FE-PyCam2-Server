@@ -7,7 +7,7 @@ then
 	echo "<Filename>: String to the target file."
 	echo "<AG>: Analogue Gain (valid range: 1.0 .. 8.0)"
 	echo "<Shutterspeed_µs>: The exposure time in microseconds."
-	echo "<RecordTime_s>: Time the video is recorded."
+	echo "<RecordTime_ms>: Time the video is recorded in [ms]."
 	exit 0
 fi
 
@@ -36,7 +36,7 @@ fi
 echo "SS=$ss"
 
 to=5000
-if [[ $# > 4 ]]; then
+if [[ $# -ge 4 ]]; then
 	to=$4
 fi
 echo "TimeOut=$to"
@@ -46,6 +46,6 @@ dtStamp=$(date -d "today" +"%y%m%d_%H%M%S")
 
 echo "Taking video with SS=$ss"
 libcamera-vid -c libcamVidOptions.txt --gain=$ag --shutter=$ss --timeout=$to -o "$dtStamp $1_SS=10000.h264"
-echo libcamera-vid -c libcamVidOptions.txt --gain=$ag --shutter=$ss --timeout=$to -o \"$dtStamp $1_SS=10000.h264\"'"
+echo libcamera-vid -c libcamVidOptions.txt --gain=$ag --shutter=$ss --timeout=$to -o \"$dtStamp $1_SS=10000.h264\"
 echo "libcamOptions.txt contains:"
 cat libcamVidOptions.txt
