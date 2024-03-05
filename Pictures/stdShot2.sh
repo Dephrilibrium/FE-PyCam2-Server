@@ -29,20 +29,21 @@ ag=8.0
 if [[ $# -ge 2 ]]; then
 	ag=$2
 fi
-echo "AG=$ag"
+echo "AG=${ag}"
 
 ss=100000
 if [[ $# -ge 3 ]]; then
 	ss=$3
 fi
-echo "SS=$ss"
+echo "SS=${ss}"
 
 dtStamp=$(date -d "today" +"%y%m%d_%H%M%S")
 #echo $dtStamp
 
-echo "Taking still-image with SS=$ss"
-libcamera-still -c libcamOptions.txt --gain $ag --shutter $ss -o "$dtStamp $1_SS=$ss.png"
-echo "Command was: 'libcamera-still -c libcamOptions.txt --gain $ag --shutter $ss -o \"$dtStamp $1_SS=$ss.png\"'"
+echo "Taking still-image with SS=${ss}"
+echo "Taking still-image with AG=${ag}"
+echo "Command used: 'libcamera-still -c libcamOptions.txt --gain ${ag} --shutter ${ss} -o \"$dtStamp $1_AG=${ag}_SS=$ss.png\"'"
+libcamera-still -c libcamOptions.txt --gain ${ag} --shutter ${ss} -o "$dtStamp $1_AG=${ag}_SS=${ss}.png"
 echo "libcamOptions.txt contains:"
 cat libcamOptions.txt
 

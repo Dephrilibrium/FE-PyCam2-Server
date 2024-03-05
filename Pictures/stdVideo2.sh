@@ -27,13 +27,13 @@ ag=8.0
 if [[ $# -ge 2 ]]; then
 	ag=$2
 fi
-echo "AG=$ag"
+echo "AG=${ag}"
 
 ss=10000
 if [[ $# -ge 3 ]]; then
 	ss=$3
 fi
-echo "SS=$ss"
+echo "SS=${ss}"
 
 to=5000
 if [[ $# -ge 4 ]]; then
@@ -44,8 +44,9 @@ echo "TimeOut=$to"
 dtStamp=$(date -d "today" +"%y%m%d_%H%M%S")
 #echo $dtStamp
 
-echo "Taking video with SS=$ss"
-libcamera-vid -c libcamVidOptions.txt --gain=$ag --shutter=$ss --timeout=$to -o "$dtStamp $1_SS=$ss.h264"
-echo libcamera-vid -c libcamVidOptions.txt --gain=$ag --shutter=$ss --timeout=$to -o \"$dtStamp $1_SS=$ss.h264\"
+echo "Taking video with SS=${ss}"
+echo "Taking video with AG=${ag}"
+libcamera-vid -c libcamVidOptions.txt --gain=${ag} --shutter=${ss} --timeout=$to -o "$dtStamp $1_AG=${ag}_SS=${ss}.h264"
+echo libcamera-vid -c libcamVidOptions.txt --gain=${ag} --shutter=${ss} --timeout=$to -o \"$dtStamp $1AG=${ag}_SS=${ss}.h264\"
 echo "libcamOptions.txt contains:"
 cat libcamVidOptions.txt
